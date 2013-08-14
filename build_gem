@@ -1,0 +1,3 @@
+#!/bin/sh
+
+(cd sslgem &&  cp ../libs/librubyssl.so lib && gem build sslgem.gemspec && mv *.gem ../)
