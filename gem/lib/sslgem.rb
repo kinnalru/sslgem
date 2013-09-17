@@ -14,4 +14,14 @@ test = Fiddle::Function.new(
     Fiddle::TYPE_INT
 )
 
+dgst = Fiddle::Function.new(
+    libssl['dgst'],
+    [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP],
+    Fiddle::TYPE_VOIDP
+)
+
 puts test.call(99)
+
+puts dgst.call("/home/jerry/devel/examples/keys/seckey.pem", "hello")
+
+
