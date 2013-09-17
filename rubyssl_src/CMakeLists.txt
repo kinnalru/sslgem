@@ -9,7 +9,7 @@ set(HEADERS
 
 
 set(SOURCES
-    main.cpp
+    main.c
 )
 
 set(DEPS
