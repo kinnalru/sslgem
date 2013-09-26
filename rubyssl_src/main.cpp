@@ -1,4 +1,8 @@
-﻿#include <unistd.h>
+﻿
+#include <sys/wait.h>
+
+#include <assert.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -7,11 +11,11 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 typedef std::vector<std::string> Args;
 
 std::string execute(const std::string& cmd, Args args, const std::string& data) {
-    pid_t pid = 0;
     int pipein[2], pipeout[2], pipeerr[2];
 
     pipe(&pipein[0]);
@@ -25,7 +29,7 @@ std::string execute(const std::string& cmd, Args args, const std::string& data) 
     }
     argsraw.push_back(NULL);
 
-    pid = fork();
+    pid_t pid = fork();
     if (pid == 0)
     {
         // Child
@@ -50,14 +54,35 @@ std::string execute(const std::string& cmd, Args args, const std::string& data) 
     write(pipein[1], data.c_str(), data.size());
     close(pipein[1]);
 
-    std::string result;
+    std::string result_out;
+    std::string result_err;
 
     int readed = 0;
     while(readed = read(pipeout[0], buf, sizeof(buf)), readed > 0) {
-        result.append(buf, readed);
+        result_out.append(buf, readed);
     }
-
-    return result; 
+    close(pipeout[0]);
+    
+    while(readed = read(pipeerr[0], buf, sizeof(buf)), readed > 0) {
+        result_err.append(buf, readed);
+    }
+    close(pipeerr[0]);
+    
+    int status = 0;
+    if (waitpid(pid, &status, 0) != pid) {
+        kill(pid, SIGTERM);
+        sleep(3);
+        if (waitpid(pid, &status, WNOHANG) != pid) {
+            kill(pid, SIGKILL);
+        }
+    }
+    
+    if (WIFEXITED(status) && !WEXITSTATUS(status)) {
+        return result_out; 
+    }
+    else {
+        throw std::runtime_error(result_err.c_str());
+    }
 }
 
 std::string digest(const std::string& keypath, const std::string& data) {
@@ -85,9 +110,27 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+#define HANDLE_ERRORS(expr) \
+    try {\
+        (expr);\
+        return 0;\
+    }\
+    catch(const std::exception& e) {\
+        strncpy(error, e.what(), esize);\
+        return -1;\
+    }\
+    catch (...) {\
+        strncpy(error, "Unknown error", esize);\
+        return -1;\
+    }    
+
 extern "C" {
-    const char* dgst(const char* keypath, const char* data) {
-        return digest(keypath, data).c_str();
+    
+    int dgst(const char* keypath, const char* data, char* result, int rsize, char* error, int esize) {
+        HANDLE_ERRORS({
+            const std::string res = digest(keypath, data);
+            strncpy(result, res.c_str(), rsize);
+        })
     }
 }
 

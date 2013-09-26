@@ -1,3 +1,7 @@
 #!/bin/sh
 
-(cd gem &&  cp ../libs/librubyssl.so lib && gem build sslgem.gemspec && cp *.gem ../libs && mv *.gem ../ && cp lib/*.rb ../libs)
+mkdir -p build
+(cd build && cmake .. && make gem)
+
+mkdir -p image
+cp -rf build/image/* image

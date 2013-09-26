@@ -1,4 +1,8 @@
 #!/bin/sh
 
-(cd openssl_src && ./config && make)
-(mkdir -p libs && cp openssl_src/*.a libs/)
+mkdir -p build
+(cd build && cmake .. && make ssl)
+
+mkdir -p image
+cp -rf build/image/* image
+

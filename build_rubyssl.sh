@@ -1,6 +1,8 @@
 #!/bin/sh
 
-(cd rubyssl_src && mkdir -p build && cd build && cmake .. && make)
-(mkdir -p libs && cp rubyssl_src/build/*.so libs/)
+mkdir -p build
+(cd build && cmake .. && make ruby)
 
-./build_gem.sh
+mkdir -p image
+cp -rf build/image/* image
+

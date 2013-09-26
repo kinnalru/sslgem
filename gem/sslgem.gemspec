@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
     s.description = "Simple and specific OpenSSL wrapper"
     s.authors     = ["jerry"]
     s.email       = 'kinnalru@gmail.com'
-    s.files       = ["lib/sslgem.rb", "lib/librubyssl.so"]
+    s.files       = ["lib/sslgem.rb", "lib/sslgemtest.rb", "lib/librubyssl.so"]
     s.homepage    = 'http://ya.ru'
     s.license     = 'MIT'
 end

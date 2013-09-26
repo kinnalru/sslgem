@@ -13,8 +13,8 @@ SHLIB_MAJOR=1
 SHLIB_MINOR=0.0
 SHLIB_EXT=.so.$(SHLIB_MAJOR).$(SHLIB_MINOR)
 PLATFORM=linux-elf
-OPTIONS=-Wa,--noexecstack no-ec_nistp_64_gcc_128 no-gmp no-jpake no-krb5 no-md2 no-rc5 no-rfc3779 no-sctp no-shared no-store no-zlib no-zlib-dynamic static-engine
-CONFIGURE_ARGS=linux-elf -Wa,--noexecstack
+OPTIONS=--prefix=/home/jerry/devel/sslgem/build -Wa,--noexecstack no-ec_nistp_64_gcc_128 no-gmp no-jpake no-krb5 no-md2 no-rc5 no-rfc3779 no-sctp no-shared no-store no-zlib no-zlib-dynamic static-engine
+CONFIGURE_ARGS=linux-elf --prefix=/home/jerry/devel/sslgem/build -Wa,--noexecstack
 SHLIB_TARGET=linux-shared
 
 # HERE indicates where this Makefile lives.  This can be used to indicate
@@ -26,10 +26,10 @@ HERE=.
 # for, say, /usr/ and yet have everything installed to /tmp/somedir/usr/.
 # Normally it is left empty.
 INSTALL_PREFIX=
-INSTALLTOP=/usr/local/ssl
+INSTALLTOP=/home/jerry/devel/sslgem/build
 
 # Do not edit this manually. Use Configure --openssldir=DIR do change this!
-OPENSSLDIR=/usr/local/ssl
+OPENSSLDIR=/home/jerry/devel/sslgem/build/ssl
 
 # NO_IDEA - Define to build without the IDEA algorithm
 # NO_RC4  - Define to build without the RC4 algorithm
