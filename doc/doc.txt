@@ -1,0 +1,19 @@
+
+
+Модуль USB для linux/win
+	rtSUp_Cryptopro
+	http://www.rutoken.ru/support/download/rutoken-for-cp/
+
+
+руководство :
+------------
+
+Затем установим системное программное обеспечение, необходимое для
+	работы Рутокен ЭЦП:
+	CCID-драйвер
+	sudo aptitude install libccid
+	PCSC
+	sudo aptitude install libpcsclite1 pcscd
+
+Затем следует скачать архив с плагином к OpenSSL.
+	pksc11-gost-linux....zip	
