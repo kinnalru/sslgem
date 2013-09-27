@@ -10,7 +10,7 @@ set(LOCAL_PREFIX ${IMAGE_DIR})
 
 include(ExternalProject)
 ExternalProject_Add(
-   libopenssl
+   libopenssl_build
    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
    PREFIX ${LOCAL_PREFIX}
    CONFIGURE_COMMAND ./build_openssl.sh ${LOCAL_PREFIX}
@@ -18,4 +18,7 @@ ExternalProject_Add(
 )
 
 
+add_custom_target(libopenssl DEPENDS libopenssl_build
+	COMMAND cp -rf ${CMAKE_CURRENT_SOURCE_DIR}/apps/libopenssl.so ${IMAGE_DIR}/lib
+	COMMAND cp -rf ${CMAKE_CURRENT_SOURCE_DIR}/apps/libopenssl.a ${IMAGE_DIR}/lib)
 

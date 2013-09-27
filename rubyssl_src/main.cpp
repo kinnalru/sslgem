@@ -100,7 +100,9 @@ std::string digest(const std::string& keypath, const std::string& data) {
     return result;
 }
 
-int dgst_main(int argc, char **argv);
+extern "C" {
+	int dgst_main(int argc, char **argv);
+}
 
 int main(int argc, char *argv[])
 {

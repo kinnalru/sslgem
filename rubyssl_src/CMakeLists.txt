@@ -20,10 +20,13 @@ set(SOURCES
 )
 
 set(DEPS
+	openssl ssl crypto dl
 )
 
+
+
 add_library(${TARGET} SHARED ${HEADERS} ${SOURCES})
-target_link_libraries(${TARGET} ${DEPS} libssl.a libcrypto.a)
+target_link_libraries(${TARGET} ${DEPS})
 
 add_executable(${TARGET}_test WIN32 ${HEADERS} ${SOURCES})
-target_link_libraries(${TARGET}_test ${DEPS} libssl.a libcrypto.a libopenssl.a)
+target_link_libraries(${TARGET}_test ${DEPS})

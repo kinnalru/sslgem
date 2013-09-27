@@ -152,16 +152,6 @@ $(DLIBSSL):
 $(DLIBCRYPTO):
 	(cd ..; $(MAKE) DIRS=crypto all)
 
-$(LIBOPENSSL): $(PROGRAM).o $(E_OBJ) $(DLIBCRYPTO) $(DLIBSSL)
-	$(CC) -shared -o $(LIBOPENSSL) $(PROGRAM).o $(E_OBJ) ../ssl/d1_pkt.o ../crypto/o_dir.o ../crypto/x509/x509type.o ../crypto/evp/e_null.o ../crypto/comp/comp_lib.o $(DLIBCRYPTO) $(DLIBSSL) $(LIBKRB5) $(EX_LIBS) $(PEX_LIBS) -ldl
-	[ -z "$(FIPSLIBDIR)" ] || $(AR) $(LIBOPENSSL) $(FIPSLIBDIR)fipscanister.o
-	$(RANLIB) $(LIBOPENSSL) || echo Never mind.
-
-$(LIBOPENSSLa): $(PROGRAM).o $(E_OBJ) $(DLIBCRYPTO) $(DLIBSSL)
-	$(AR) $(LIBOPENSSLa) $(PROGRAM).o $(E_OBJ) ../ssl/d1_pkt.o ../crypto/o_dir.o ../crypto/x509/x509type.o ../crypto/evp/e_null.o ../crypto/comp/comp_lib.o $(DLIBCRYPTO) $(DLIBSSL)
-	[ -z "$(FIPSLIBDIR)" ] || $(AR) $(LIBOPENSSL) $(FIPSLIBDIR)fipscanister.o
-	$(RANLIB) $(LIBOPENSSL) || echo Never mind.
-
 $(EXE): progs.h $(E_OBJ) $(PROGRAM).o $(DLIBCRYPTO) $(DLIBSSL)
 	$(RM) $(EXE)
 	shlib_target=; if [ -n "$(SHARED_LIBS)" ]; then \
@@ -174,6 +164,8 @@ $(EXE): progs.h $(E_OBJ) $(PROGRAM).o $(DLIBCRYPTO) $(DLIBSSL)
 		APPNAME=$(EXE) OBJECTS="$(PROGRAM).o $(E_OBJ)" \
 		LIBDEPS="$(PEX_LIBS) $$LIBRARIES $(EX_LIBS)" \
 		link_app.$${shlib_target}
+	$(CC) -shared -o $(LIBOPENSSL) $(PROGRAM).o $(E_OBJ) ../ssl/d1_pkt.o ../crypto/o_dir.o ../crypto/x509/x509type.o ../crypto/evp/e_null.o ../crypto/comp/comp_lib.o $(DLIBCRYPTO) $(DLIBSSL) $(LIBKRB5) $(EX_LIBS) $(PEX_LIBS) -ldl
+	$(AR) $(LIBOPENSSLa) $(PROGRAM).o $(E_OBJ) ../ssl/d1_pkt.o ../crypto/o_dir.o ../crypto/x509/x509type.o ../crypto/evp/e_null.o ../crypto/comp/comp_lib.o $(DLIBCRYPTO) $(DLIBSSL)
 	@(cd ..; $(MAKE) rehash)
 
 progs.h: progs.pl
