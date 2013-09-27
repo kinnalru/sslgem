@@ -100,15 +100,12 @@ std::string digest(const std::string& keypath, const std::string& data) {
     return result;
 }
 
+int dgst_main(int argc, char **argv);
+
 int main(int argc, char *argv[])
 {
-    std::stringstream input;           
-    input << std::cin.rdbuf();
-    Args args; args.push_back("-");
-    digest("/home/jerry/devel/examples/keys/seckey.pem", input.str());
-    
-    return 0;
-}
+    return dgst_main(argc,argv);
+} 
 
 #define HANDLE_ERRORS(expr) \
     try {\

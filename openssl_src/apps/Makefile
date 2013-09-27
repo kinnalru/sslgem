@@ -10,6 +10,7 @@ CFLAG=		-g -static
 MAKEFILE=	Makefile
 PERL=		perl
 RM=		rm -f
+AR=		ar rcs
 # KRB5 stuff
 KRB5_INCLUDES=
 LIBKRB5=
@@ -28,6 +29,8 @@ DLIBCRYPTO=../libcrypto.a
 DLIBSSL=../libssl.a
 LIBCRYPTO=-L.. -lcrypto
 LIBSSL=-L.. -lssl
+LIBOPENSSL=libopenssl.so
+LIBOPENSSLa=libopenssl.a
 
 PROGRAM= openssl
 
@@ -148,6 +151,16 @@ $(DLIBSSL):
 
 $(DLIBCRYPTO):
 	(cd ..; $(MAKE) DIRS=crypto all)
+
+$(LIBOPENSSL): $(PROGRAM).o $(E_OBJ) $(DLIBCRYPTO) $(DLIBSSL)
+	$(CC) -shared -o $(LIBOPENSSL) $(PROGRAM).o $(E_OBJ) ../ssl/d1_pkt.o ../crypto/o_dir.o ../crypto/x509/x509type.o ../crypto/evp/e_null.o ../crypto/comp/comp_lib.o $(DLIBCRYPTO) $(DLIBSSL) $(LIBKRB5) $(EX_LIBS) $(PEX_LIBS) -ldl
+	[ -z "$(FIPSLIBDIR)" ] || $(AR) $(LIBOPENSSL) $(FIPSLIBDIR)fipscanister.o
+	$(RANLIB) $(LIBOPENSSL) || echo Never mind.
+
+$(LIBOPENSSLa): $(PROGRAM).o $(E_OBJ) $(DLIBCRYPTO) $(DLIBSSL)
+	$(AR) $(LIBOPENSSLa) $(PROGRAM).o $(E_OBJ) ../ssl/d1_pkt.o ../crypto/o_dir.o ../crypto/x509/x509type.o ../crypto/evp/e_null.o ../crypto/comp/comp_lib.o $(DLIBCRYPTO) $(DLIBSSL)
+	[ -z "$(FIPSLIBDIR)" ] || $(AR) $(LIBOPENSSL) $(FIPSLIBDIR)fipscanister.o
+	$(RANLIB) $(LIBOPENSSL) || echo Never mind.
 
 $(EXE): progs.h $(E_OBJ) $(PROGRAM).o $(DLIBCRYPTO) $(DLIBSSL)
 	$(RM) $(EXE)
