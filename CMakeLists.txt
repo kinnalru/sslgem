@@ -8,22 +8,19 @@ endif(COMMAND cmake_policy)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(IMAGE_DIR ${CMAKE_BINARY_DIR}/image) 
+
 add_subdirectory(openssl_src EXCLUDE_FROM_ALL)
 add_subdirectory(rubyssl_src EXCLUDE_FROM_ALL)
 
-add_custom_target(ssl DEPENDS libopenssl
-	COMMAND mkdir -p image
-	COMMAND cp ${CMAKE_BINARY_DIR}/lib/*.a image
-	COMMAND cp ${CMAKE_BINARY_DIR}/bin/* image)
+add_custom_target(ssl DEPENDS libopenssl)
 
-add_custom_target(ruby DEPENDS ssl rubyssl
-	COMMAND mkdir -p image
-	COMMAND cp ${CMAKE_BINARY_DIR}/lib/*.so image)
+add_custom_target(ruby DEPENDS ssl DEPENDS rubyssl)
 
+set(GEM_DIR ${CMAKE_BINARY_DIR}/gem)
 add_custom_target(gem DEPENDS rubyssl
-	COMMAND mkdir -p image
-	COMMAND cp image/librubyssl.so ${CMAKE_SOURCE_DIR}/gem/lib
-	COMMAND cd ${CMAKE_SOURCE_DIR}/gem && gem build sslgem.gemspec
-	COMMAND cp ${CMAKE_SOURCE_DIR}/gem/lib/*.rb image
-	COMMAND cp ${CMAKE_SOURCE_DIR}/gem/*.gem image)
+	COMMAND cp -rf ${CMAKE_SOURCE_DIR}/gem ${CMAKE_BINARY_DIR}
+	COMMAND mv ${IMAGE_DIR} ${GEM_DIR}/lib/
+	COMMAND cd ${GEM_DIR} && gem build sslgem.gemspec
+	COMMAND mv ${GEM_DIR}/lib/image ${IMAGE_DIR})
 

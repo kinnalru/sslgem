@@ -6,7 +6,7 @@ if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
 
-set(LOCAL_PREFIX ${CMAKE_BINARY_DIR})
+set(LOCAL_PREFIX ${IMAGE_DIR})
 
 include(ExternalProject)
 ExternalProject_Add(
