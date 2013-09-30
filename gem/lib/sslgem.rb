@@ -21,7 +21,10 @@ class SslGem
             Fiddle::TYPE_INT
         )
         
-        
+        attach_function(:dgst_native,
+            [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
+            Fiddle::TYPE_INT
+        )
         
         
         
