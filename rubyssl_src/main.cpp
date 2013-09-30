@@ -117,6 +117,7 @@ struct stdout_capture_t {
     }
     
     std::string data() {
+        std::cerr << "DATA:" << size << std::endl;
         if (buffer)
             return std::string(buffer, size);
         else {
@@ -167,13 +168,26 @@ std::string digest_native(const std::string& keypath, const std::string& data) {
     
     stdout_capture_t out;
     std::vector<char> inputdata(data.begin(), data.end());
-    stdin_substitute_t in(inputdata.data(), inputdata.size());
-    if (main(argsraw.size() - 1, argsraw.data()) == 0) { 
-        return out.data();
+
+    pid_t p = fork();
+    if (p == 0) {
+        stdin_substitute_t in(inputdata.data(), inputdata.size());        
+        if (main(argsraw.size() - 1, argsraw.data()) == 0) { 
+            exit(0);
+        }
+        else {
+            exit(1);
+        }
     }
-    else {
-        return std::string("error");
-    }
+    
+    int s;
+    waitpid(p, &s, 0);
+    
+    std::string result = execute("base64", Args(), out.data());
+    
+    std::cerr << "RESULT:" << result << std::endl;
+    
+    return result;
 }
 
 
