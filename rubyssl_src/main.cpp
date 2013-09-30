@@ -15,18 +15,19 @@
 #include <stdexcept>
 
 typedef std::vector<std::string> Args;
+typedef int (Main) (int argc, char **argv);
 
-std::string execute(const std::string& cmd, Args args, const std::string& data) {
+std::string execute(const std::string& cmd, Args args, const std::string& data, Main main = NULL) {
     int pipein[2], pipeout[2], pipeerr[2];
 
     pipe(&pipein[0]);
     pipe(&pipeout[0]);
     pipe(&pipeerr[0]);
 
-    std::vector<const char *> argsraw;
-    argsraw.push_back(cmd.c_str());
+    std::vector<char*> argsraw;
+    argsraw.push_back(const_cast<char*>(cmd.c_str()));
     for (int i = 0; i< args.size(); ++i) {
-        argsraw.push_back(args[i].c_str());
+        argsraw.push_back(const_cast<char*>(args[i].c_str()));
     }
     argsraw.push_back(NULL);
 
@@ -43,7 +44,12 @@ std::string execute(const std::string& cmd, Args args, const std::string& data) 
         close(pipeerr[0]);
         dup2(pipeerr[1], STDERR_FILENO);
 
-        exit(execvp(cmd.c_str(), (char**)(&argsraw[0])));
+        if (main) {
+            exit(main(argsraw.size() - 1, argsraw.data()));
+        }
+        else {
+            exit(execvp(cmd.c_str(), argsraw.data()));
+        }
     }
     else {
         close(pipein[0]);
@@ -106,91 +112,20 @@ extern "C" {
     int main(int argc, char **argv);
 }
 
-struct stdout_capture_t {
-    int stdout_fd;
-    char* buffer;
-    size_t size;
-    
-    stdout_capture_t() : buffer(NULL), size(0) {
-        stdout_fd = dup(STDOUT_FILENO);
-        stdout = open_memstream(&buffer, &size);
-    }
-    
-    std::string data() {
-        std::cerr << "DATA:" << size << std::endl;
-        if (buffer)
-            return std::string(buffer, size);
-        else {
-            return std::string();
-        }
-    }
-    
-    ~stdout_capture_t() {
-        ::fclose(stdout);
-        dup2(stdout_fd, STDOUT_FILENO);
-        stdout = fdopen(STDOUT_FILENO, "w");
-        close(stdout_fd);
-        free(buffer);
-    }
-};
-
-struct stdin_substitute_t {
-    int stdin_fd;
-    
-    stdin_substitute_t(void* buffer, size_t size) {
-        stdin_fd = dup(STDIN_FILENO);
-        stdin = fmemopen(buffer, size, "r");
-    }
-    
-    ~stdin_substitute_t() {
-        ::fclose(stdin);
-        dup2(stdin_fd, STDIN_FILENO);
-        stdin = fdopen(STDIN_FILENO, "r");
-        close(stdin_fd);
-    }
-};
-
 std::string digest_native(const std::string& keypath, const std::string& data) {
 
     Args args;
-    args.push_back("openssl");
     args.push_back("dgst");
     args.push_back("-engine");
     args.push_back("gost");
     args.push_back("-sign");
     args.push_back(keypath);
 
-    std::vector<char *> argsraw;
-    for (int i = 0; i< args.size(); ++i) {
-        argsraw.push_back(const_cast<char*>(args[i].c_str()));
-    }
-    argsraw.push_back(NULL);
-    
-    stdout_capture_t out;
-    std::vector<char> inputdata(data.begin(), data.end());
+    std::string dgst = execute("openssl", args, data, main);
+    std::string result = execute("base64", Args(), dgst);
 
-    pid_t p = fork();
-    if (p == 0) {
-        stdin_substitute_t in(inputdata.data(), inputdata.size());        
-        if (main(argsraw.size() - 1, argsraw.data()) == 0) { 
-            exit(0);
-        }
-        else {
-            exit(1);
-        }
-    }
-    
-    int s;
-    waitpid(p, &s, 0);
-    
-    std::string result = execute("base64", Args(), out.data());
-    
-    std::cerr << "RESULT:" << result << std::endl;
-    
     return result;
 }
-
-
 
 // int main(int argc, char *argv[])
 // {
