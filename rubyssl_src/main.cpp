@@ -107,10 +107,7 @@ Bytes digest(const std::string& privatekeypath, const Bytes& data) {
     args.push_back("-sign");
     args.push_back(privatekeypath);
 
-    Bytes dgst = execute("openssl", args, data, main);
-    Bytes result = execute("base64", Args(), dgst);
-
-    return result;
+    return execute("openssl", args, data, main);
 }
 
 void smime_verify(const std::string& signaturepath, const std::string& filename) {

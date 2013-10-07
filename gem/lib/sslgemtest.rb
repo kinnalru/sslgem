@@ -1,4 +1,6 @@
 
+require 'base64'
+
 $stderr.sync = true
 $stdout.sync = true
 
@@ -21,11 +23,11 @@ begin
     
     puts "\n  >> Generate digest 1..."
     dgst = ssl.dgst("/home/jerry/devel/examples/keys/seckey.pem", "11111111") 
-    puts "  >> Result OK #{dgst}"
+    puts "  >> Result OK #{Base64.encode64(dgst)}"
     
     puts "\n  >> Generate digest 2..."
     dgst = ssl.dgst("/home/jerry/devel/examples/keys/seckey.pem", "22222222")
-    puts "  >> Result OK #{dgst}"
+    puts "  >> Result OK #{Base64.encode64(dgst)}"
     
     begin
         puts "\n  >> Generate digest with invalid key..."
