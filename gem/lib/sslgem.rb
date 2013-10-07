@@ -1,4 +1,5 @@
 require 'fiddle'
+require 'base64'
 
 class SslGem
     
@@ -19,7 +20,9 @@ class SslGem
         attach_function(:dgst,
             [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
             Fiddle::TYPE_INT
-        )
+        ) do |data|
+          Base64.encode64(data)
+        end
         
         attach_function(:verify_file,
             [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
@@ -58,7 +61,11 @@ private
                 status = instance_eval("@#{__method__}").call(*args, result_ptr, size_ptr, error_ptr, BUFSIZE)
                 result_size = size_ptr.to_s.to_i
                 if (status == 0)
+                  if block_given?
+                    return yield result_ptr.to_s(result_size)
+                  else
                     return result_ptr.to_s(result_size)
+                  end
                 else
                     raise SslGem::Error.new(error_ptr.to_s)
                 end
