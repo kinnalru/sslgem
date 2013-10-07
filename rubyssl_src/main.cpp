@@ -92,39 +92,42 @@ std::string execute(const std::string& cmd, Args args, const std::string& data, 
     }
 }
 
-std::string digest(const std::string& keypath, const std::string& data) {
-
-    Args args;
-    args.push_back("dgst");
-    args.push_back("-engine");
-    args.push_back("gost");
-    args.push_back("-sign");
-    args.push_back(keypath);
-
-    std::string dgst = execute("openssl", args, data);
-    std::string result = execute("base64", Args(), dgst);
-
-    return result;
-}
-
 extern "C" {
-    int dgst_main(int argc, char **argv);
     int main(int argc, char **argv);
 }
 
-std::string digest_native(const std::string& keypath, const std::string& data) {
+std::string digest(const std::string& privatekeypath, const std::string& data) {
 
     Args args;
     args.push_back("dgst");
     args.push_back("-engine");
     args.push_back("gost");
     args.push_back("-sign");
-    args.push_back(keypath);
+    args.push_back(privatekeypath);
 
     std::string dgst = execute("openssl", args, data, main);
     std::string result = execute("base64", Args(), dgst);
 
     return result;
+}
+
+std::string smime_verify(const std::string& signaturepath, const std::string& filename) {
+
+    Args args;
+    args.push_back("smime");
+    args.push_back("-verify");
+    args.push_back("-engine");
+    args.push_back("gost");
+    args.push_back("-noverify");
+    args.push_back("-inform");
+    args.push_back("DER");
+    args.push_back("-in");
+    args.push_back(signaturepath);
+    args.push_back("-content");
+    args.push_back(filename);
+    
+
+    return execute("openssl", args, std::string(), main);
 }
 
 // int main(int argc, char *argv[])
@@ -148,17 +151,16 @@ std::string digest_native(const std::string& keypath, const std::string& data) {
 
 extern "C" {
     
-    int dgst(const char* keypath, const char* data, char* result, int rsize, char* error, int esize) {
+    int dgst(const char* privatekeypath, const char* data, char* result, int rsize, char* error, int esize) {
         HANDLE_ERRORS({
-            const std::string res = digest(keypath, data);
+            const std::string res = digest(privatekeypath, data);
             strncpy(result, res.c_str(), rsize);
         })
     }
     
-    int dgst_native(const char* keypath, const char* data, char* result, int rsize, char* error, int esize) {
+    int verify_file(const char* signaturepath, const char* filename, char* result, int rsize, char* error, int esize) {
         HANDLE_ERRORS({
-            const std::string res = digest_native(keypath, data);
-            strncpy(result, res.c_str(), rsize);
+            smime_verify(signaturepath, filename);
         })
     }
 }
