@@ -14,10 +14,11 @@
 #include <vector>
 #include <stdexcept>
 
+typedef std::vector<char> Bytes;
 typedef std::vector<std::string> Args;
 typedef int (Main) (int argc, char **argv);
 
-std::string execute(const std::string& cmd, Args args, const std::string& data, Main main = NULL) {
+Bytes execute(const std::string& cmd, Args args, const Bytes& data, Main main = NULL) {
     int pipein[2], pipeout[2], pipeerr[2];
 
     pipe(&pipein[0]);
@@ -58,21 +59,22 @@ std::string execute(const std::string& cmd, Args args, const std::string& data, 
     }
 
     char buf[4096];
-    write(pipein[1], data.c_str(), data.size());
+    write(pipein[1], data.data(), data.size());
     close(pipein[1]);
 
-    std::string result_out;
-    std::string result_err;
+    Bytes result_out;
+    Bytes result_err;
 
     int readed = 0;
     while(readed = read(pipeout[0], buf, sizeof(buf)), readed > 0) {
-        result_out.append(buf, readed);
+        result_out.insert(result_out.end(), buf, buf + readed);
     }
     close(pipeout[0]);
     
     while(readed = read(pipeerr[0], buf, sizeof(buf)), readed > 0) {
-        result_err.append(buf, readed);
+        result_err.insert(result_err.end(), buf, buf + readed);
     }
+    result_err.push_back(0);
     close(pipeerr[0]);
     
     int status = 0;
@@ -88,7 +90,7 @@ std::string execute(const std::string& cmd, Args args, const std::string& data, 
         return result_out; 
     }
     else {
-        throw std::runtime_error(result_err.c_str());
+        throw std::runtime_error(result_err.data());
     }
 }
 
@@ -96,7 +98,7 @@ extern "C" {
     int main(int argc, char **argv);
 }
 
-std::string digest(const std::string& privatekeypath, const std::string& data) {
+Bytes digest(const std::string& privatekeypath, const Bytes& data) {
 
     Args args;
     args.push_back("dgst");
@@ -105,13 +107,13 @@ std::string digest(const std::string& privatekeypath, const std::string& data) {
     args.push_back("-sign");
     args.push_back(privatekeypath);
 
-    std::string dgst = execute("openssl", args, data, main);
-    std::string result = execute("base64", Args(), dgst);
+    Bytes dgst = execute("openssl", args, data, main);
+    Bytes result = execute("base64", Args(), dgst);
 
     return result;
 }
 
-std::string smime_verify(const std::string& signaturepath, const std::string& filename) {
+void smime_verify(const std::string& signaturepath, const std::string& filename) {
 
     Args args;
     args.push_back("smime");
@@ -127,7 +129,34 @@ std::string smime_verify(const std::string& signaturepath, const std::string& fi
     args.push_back(filename);
     
 
-    return execute("openssl", args, std::string(), main);
+    execute("openssl", args, Bytes(), main);
+}
+
+Bytes smime_sign(const std::string& privatekeypath, const std::string& certificatefile, const std::string& filename) {
+
+    Args args;
+    args.push_back("smime");
+    args.push_back("-sign");
+    args.push_back("-engine");
+    args.push_back("gost");
+    args.push_back("-gost89");
+    args.push_back("-inkey");
+    args.push_back(privatekeypath);
+    args.push_back("-signer");
+    args.push_back(certificatefile);    
+    args.push_back("-in");
+    args.push_back(filename);
+    args.push_back("-outform");        
+    args.push_back("DER");
+    args.push_back("-binary");
+    
+    return execute("openssl", args, Bytes(), main);
+}
+
+void fill_string(char* dst, int value) {
+    char str[10];
+    memset(str, 0, sizeof(str));
+    strncpy(dst, str, sprintf(str, "%d", value));
 }
 
 // int main(int argc, char *argv[])
@@ -141,28 +170,43 @@ std::string smime_verify(const std::string& signaturepath, const std::string& fi
         return 0;\
     }\
     catch(const std::exception& e) {\
-        strncpy(error, e.what(), esize);\
+        strncpy(error, e.what(), bufsize);\
         return -1;\
     }\
     catch (...) {\
-        strncpy(error, "Unknown error", esize);\
+        strncpy(error, "Unknown error", bufsize);\
         return -1;\
     }    
 
+    
+    
 extern "C" {
     
-    int dgst(const char* privatekeypath, const char* data, char* result, int rsize, char* error, int esize) {
+    int dgst(const char* privatekeypath, const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
         HANDLE_ERRORS({
-            const std::string res = digest(privatekeypath, data);
-            strncpy(result, res.c_str(), rsize);
+            const std::string data(dataptr);
+            const Bytes res = digest(privatekeypath, Bytes(data.begin(), data.end()));
+            int size = std::min(static_cast<int>(res.size()), bufsize); 
+            fill_string(rsize, size);            
+            memcpy(result, res.data(), size);
         })
     }
     
-    int verify_file(const char* signaturepath, const char* filename, char* result, int rsize, char* error, int esize) {
+    int verify_file(const char* signaturepath, const char* filename, char* result, char* rsize, char* error, int bufsize) {
         HANDLE_ERRORS({
             smime_verify(signaturepath, filename);
         })
     }
+
+    int sign_file(const char* privatekeypath, const char* certificatefile, const char* filename, char* result, char* rsize, char* error, int bufsize) {
+        HANDLE_ERRORS({
+            const Bytes res = smime_sign(privatekeypath, certificatefile, filename);
+            int size = std::min(static_cast<int>(res.size()), bufsize); 
+            fill_string(rsize, size);
+            memcpy(result, res.data(), size);
+        })
+    }
+
 }
 
 
