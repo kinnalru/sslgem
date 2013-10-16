@@ -1,4 +1,4 @@
-set(TARGET rubyssl)
+set(TARGET sslext)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(${CMAKE_BINARY_DIR})

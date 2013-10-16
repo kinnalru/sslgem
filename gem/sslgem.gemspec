@@ -21,4 +21,6 @@ Gem::Specification.new do |s|
     s.files       = Helper::files('bin') + Helper::files('lib') + Helper::files('ext/ssl/')
     s.homepage    = 'http://ya.ru'
     s.license     = 'MIT'
+    s.require_path= ['lib']
+    s.extensions  = Dir['ext/ssl/extconf.rb']
 end
