@@ -5,7 +5,7 @@ class SslGem
     
   
     BUFSIZE=4096
-    IMAGEPATH = File.dirname(__FILE__) + "/image/"
+    IMAGEPATH = File.dirname(__FILE__) + "/../ext/ssl/image/"
     ENV['PATH']="#{IMAGEPATH}/bin:#{ENV['PATH']}"
     
     class Error < RuntimeError
@@ -15,7 +15,7 @@ class SslGem
     end
     
     def initialize
-        @libssl = Fiddle.dlopen(IMAGEPATH+ "/lib/" + 'librubyssl.so')
+        @libssl = Fiddle.dlopen(IMAGEPATH+ "/lib/" + 'libsslext.so')
         
         attach_function(:dgst,
             [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],

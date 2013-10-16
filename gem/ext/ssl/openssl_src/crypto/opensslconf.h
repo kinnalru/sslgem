@@ -85,8 +85,8 @@
 
 #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
 #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
-#define ENGINESDIR "/home/jerry/devel/sslgem/build/image/lib/engines"
-#define OPENSSLDIR "/home/jerry/devel/sslgem/build/image/ssl"
+#define ENGINESDIR "/home/jerry/devel/sslgem_new/gem/ext/ssl/build/..//image/lib/engines"
+#define OPENSSLDIR "/home/jerry/devel/sslgem_new/gem/ext/ssl/build/..//image/ssl"
 #endif
 #endif
 
