@@ -7,6 +7,9 @@ class SslGem
     BUFSIZE=4096
     IMAGEPATH = File.dirname(__FILE__) + "/image/"
     ENV['PATH']="#{IMAGEPATH}/bin:#{ENV['PATH']}"
+
+	TESTKEY = File.dirname(__FILE__) + "/keys/seckey.pem"
+	TESTCERT = File.dirname(__FILE__) + "/keys/cert.pem"
     
     class Error < RuntimeError
         def initialize(message)
