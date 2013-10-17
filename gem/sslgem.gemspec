@@ -16,7 +16,9 @@ Gem::Specification.new do |s|
     s.description = "Simple and specific OpenSSL wrapper"
     s.authors     = ["jerry"]
     s.email       = 'kinnalru@gmail.com'
-    s.files       = Helper::files("lib")
+    s.bindir      = 'bin'
+    s.executable  = 'sslgemtest.rb'
+    s.files       = Helper::files('bin') + Helper::files('lib') + Helper::files('ext/ssl/')
     s.homepage    = 'http://ya.ru'
     s.license     = 'MIT'
 end
