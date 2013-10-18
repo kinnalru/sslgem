@@ -6,7 +6,7 @@ include_directories(${CMAKE_SOURCE_DIR}/openssl_src/)
 link_directories(${CMAKE_BINARY_DIR}/lib/)
 link_directories(${IMAGE_DIR}/lib/)
 
-add_definitions(-DMONOLITH)
+add_definitions(-DMONOLITH -O2)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${IMAGE_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${IMAGE_DIR}/lib)

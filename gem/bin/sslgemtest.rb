@@ -21,18 +21,26 @@ puts ">> Creating ssl instance... OK"
 
 puts ">> Begin test"
 begin
-    
-    puts "\n  >> Generate digest 1..."
-    dgst = ssl.dgst(SslGem::TESTKEY, "11111111") 
+
+	puts "\n >> Create digest 1...."
+    dgst = ssl.dgst("11111111") 
+    puts "  >> Result OK #{dgst}"
+
+	puts "\n >> Create digest 2...."
+    dgst = ssl.dgst("22222222") 
     puts "  >> Result OK #{dgst}"
     
-    puts "\n  >> Generate digest 2..."
-    dgst = ssl.dgst(SslGem::TESTKEY, "22222222")
+    puts "\n  >> Generate sign 1..."
+    sign = ssl.sign(SslGem::TESTKEY, "11111111") 
+    puts "  >> Result OK #{sign}"
+    
+    puts "\n  >> Generate sign 2..."
+    sign = ssl.sign(SslGem::TESTKEY, "22222222")
     puts "  >> Result OK #{dgst}"
     
     begin
-        puts "\n  >> Generate digest with invalid key..."
-        dgst = ssl.dgst("/not/existent/key", "11111111")
+        puts "\n  >> Generate sign with invalid key..."
+        sign = ssl.sign("/not/existent/key", "11111111")
         raise "it must be impossible to generate digest"
     rescue SslGem::Error => e
         puts "  >> Result OK"

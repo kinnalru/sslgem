@@ -98,7 +98,19 @@ extern "C" {
     int main(int argc, char **argv);
 }
 
-Bytes digest(const std::string& privatekeypath, const Bytes& data) {
+Bytes digest(const Bytes& data) {
+
+    Args args;
+    args.push_back("dgst");
+    args.push_back("-engine");
+    args.push_back("gost");
+    args.push_back("-md_gost94");
+	args.push_back("-binary");
+
+    return execute("openssl", args, data, main);
+}
+
+Bytes sign(const std::string& privatekeypath, const Bytes& data) {
 
     Args args;
     args.push_back("dgst");
@@ -179,10 +191,20 @@ void fill_string(char* dst, int value) {
     
 extern "C" {
     
-    int dgst(const char* privatekeypath, const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
+    int dgst(const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
         HANDLE_ERRORS({
             const std::string data(dataptr);
-            const Bytes res = digest(privatekeypath, Bytes(data.begin(), data.end()));
+            const Bytes res = digest(Bytes(data.begin(), data.end()));
+            int size = std::min(static_cast<int>(res.size()), bufsize); 
+            fill_string(rsize, size);            
+            memcpy(result, res.data(), size);
+        })
+    }
+
+    int sign(const char* privatekeypath, const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
+        HANDLE_ERRORS({
+            const std::string data(dataptr);
+            const Bytes res = sign(privatekeypath, Bytes(data.begin(), data.end()));
             int size = std::min(static_cast<int>(res.size()), bufsize); 
             fill_string(rsize, size);            
             memcpy(result, res.data(), size);

@@ -21,6 +21,11 @@ class SslGem
         @libssl = Fiddle.dlopen(IMAGEPATH+ "/lib/" + 'libsslext.so')
         
         attach_function(:dgst,
+            [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
+            Fiddle::TYPE_INT
+        )
+
+        attach_function(:sign,
             [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
             Fiddle::TYPE_INT
         ) do |data|
