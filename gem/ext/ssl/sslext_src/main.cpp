@@ -105,7 +105,7 @@ Bytes digest(const Bytes& data) {
     args.push_back("-engine");
     args.push_back("gost");
     args.push_back("-md_gost94");
-	args.push_back("-binary");
+    args.push_back("-binary");
 
     return execute("openssl", args, data, main);
 }
