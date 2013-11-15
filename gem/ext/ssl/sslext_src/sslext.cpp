@@ -1,5 +1,4 @@
-﻿
-#include <sys/wait.h>
+﻿#include <sys/wait.h>
 
 #include <assert.h>
 #include <unistd.h>
@@ -7,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <zconf.h>
 
 #include <iostream>
 #include <sstream>
@@ -191,7 +191,7 @@ void fill_string(char* dst, int value) {
     
 extern "C" {
     
-    int dgst(const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
+    int dgst1(const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
         HANDLE_ERRORS({
             const std::string data(dataptr);
             const Bytes res = digest(Bytes(data.begin(), data.end()));
@@ -201,7 +201,7 @@ extern "C" {
         })
     }
 
-    int sign(const char* privatekeypath, const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
+    int sign1(const char* privatekeypath, const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
         HANDLE_ERRORS({
             const std::string data(dataptr);
             const Bytes res = sign(privatekeypath, Bytes(data.begin(), data.end()));
@@ -211,13 +211,13 @@ extern "C" {
         })
     }
     
-    int verify_file(const char* signaturepath, const char* filename, char* result, char* rsize, char* error, int bufsize) {
+    int verify_file1(const char* signaturepath, const char* filename, char* result, char* rsize, char* error, int bufsize) {
         HANDLE_ERRORS({
             smime_verify(signaturepath, filename);
         })
     }
 
-    int sign_file(const char* privatekeypath, const char* certificatefile, const char* filename, char* result, char* rsize, char* error, int bufsize) {
+    int sign_file1(const char* privatekeypath, const char* certificatefile, const char* filename, char* result, char* rsize, char* error, int bufsize) {
         HANDLE_ERRORS({
             const Bytes res = smime_sign(privatekeypath, certificatefile, filename);
             int size = std::min(static_cast<int>(res.size()), bufsize); 
@@ -228,4 +228,45 @@ extern "C" {
 
 }
 
+// Include the Ruby headers and goodies
+#include "ruby.h"
 
+#define HANDLE_EXCEPTIONS(expr) \
+    try {\
+        (expr);\
+    }\
+    catch(const std::exception& e) {\
+        rb_raise(rb_eStandardError, e.what(), NULL);\
+    }\
+    catch (...) {\
+        rb_raise(rb_eStandardError, "SslExt: unknown exception");\
+    }\
+    return Qnil;
+
+extern "C" {
+
+    VALUE dgst(VALUE self, VALUE rdata) {
+        HANDLE_EXCEPTIONS({
+            const Bytes data(RSTRING_PTR(rdata), RSTRING_END(rdata));
+            const Bytes res = digest(data);
+            return rb_str_new2(res.data());
+        })
+    }
+    
+    int sign(VALUE self, VALUE rkey, VALUE rdata) {
+        HANDLE_EXCEPTIONS({
+            const Bytes data(RSTRING_PTR(rdata), RSTRING_END(rdata));
+            const std::string privatekeypath(RSTRING_PTR(rkey), RSTRING_END(rkey));
+            const Bytes res = sign(privatekeypath, data);
+            return rb_str_new2(res.data());
+        })
+    }    
+
+    // The initialization method for this module
+    void Init_sslext() {
+        static VALUE sslExt = rb_define_module("SslExt");
+        rb_define_method(sslExt, "dgst", (VALUE(*)(...))dgst, 1);
+    }
+
+
+}

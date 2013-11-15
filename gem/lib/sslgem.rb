@@ -1,4 +1,3 @@
-require 'fiddle'
 require 'base64'
 
 class SslGem
@@ -8,8 +7,8 @@ class SslGem
     IMAGEPATH = File.dirname(__FILE__) + "/../ext/ssl/image/"
     ENV['PATH']="#{IMAGEPATH}/bin:#{ENV['PATH']}"
 
-	TESTKEY = File.dirname(__FILE__) + "/keys/seckey.pem"
-	TESTCERT = File.dirname(__FILE__) + "/keys/cert.pem"
+    TESTKEY = File.dirname(__FILE__) + "/keys/seckey.pem"
+    TESTCERT = File.dirname(__FILE__) + "/keys/cert.pem"
     
     class Error < RuntimeError
         def initialize(message)
@@ -18,29 +17,33 @@ class SslGem
     end
     
     def initialize
-        @libssl = Fiddle.dlopen(IMAGEPATH+ "/lib/" + 'libsslext.so')
+        require "#{IMAGEPATH + "/lib/" + 'sslext.so'}"
         
-        attach_function(:dgst,
-            [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
-            Fiddle::TYPE_INT
-        )
-
-        attach_function(:sign,
-            [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
-            Fiddle::TYPE_INT
-        ) do |data|
-          Base64.encode64(data)
+        class << self
+          include SslExt
         end
         
-        attach_function(:verify_file,
-            [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
-            Fiddle::TYPE_INT
-        )
-        
-        attach_function(:sign_file,
-            [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
-            Fiddle::TYPE_INT
-        )
+#         attach_function(:dgst,
+#             [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
+#             Fiddle::TYPE_INT
+#         )
+# 
+#         attach_function(:sign,
+#             [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
+#             Fiddle::TYPE_INT
+#         ) do |data|
+#           Base64.encode64(data)
+#         end
+#         
+#         attach_function(:verify_file,
+#             [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
+#             Fiddle::TYPE_INT
+#         )
+#         
+#         attach_function(:sign_file,
+#             [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
+#             Fiddle::TYPE_INT
+#         )
         
     end
     

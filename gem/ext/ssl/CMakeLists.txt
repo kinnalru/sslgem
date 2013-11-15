@@ -17,19 +17,13 @@ endif()
 
 set(IMAGE_DIR ${DESTDIR}/image) 
 
-add_subdirectory(openssl_src EXCLUDE_FROM_ALL)
-add_subdirectory(sslext_src EXCLUDE_FROM_ALL)
 
+add_subdirectory(openssl_src EXCLUDE_FROM_ALL)
 add_custom_target(ssl DEPENDS libopenssl)
 
-add_custom_target(ext DEPENDS ssl DEPENDS sslext DEPENDS sslext_test)
+add_custom_target(ext DEPENDS ssl
+    COMMAND cd "${CMAKE_CURRENT_SOURCE_DIR}/sslext_src" && IMAGE_DIR="${IMAGE_DIR}" ruby extconf.rb
+    COMMAND cd "${CMAKE_CURRENT_SOURCE_DIR}/sslext_src" && make && cp *.so "${IMAGE_DIR}/lib/"
+)
 
-#set(GEM_DIR ${CMAKE_BINARY_DIR}/gem)
-#add_custom_target(gem DEPENDS ssl DEPENDS ruby
-#	COMMAND cp -rf ${CMAKE_SOURCE_DIR}/gem ${CMAKE_BINARY_DIR}
-#	COMMAND mv ${IMAGE_DIR} ${GEM_DIR}/lib/
-#	COMMAND cd ${GEM_DIR} && gem build sslgem.gemspec
-#	COMMAND cd ${GEM_DIR} && gem generate_index
-#	COMMAND mv ${GEM_DIR}/lib/image ${IMAGE_DIR})
-
-#add_custom_target(all DEPENDS gem)
+add_custom_target(all DEPENDS ext)
