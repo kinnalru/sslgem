@@ -110,7 +110,7 @@ Bytes digest(const Bytes& data) {
     return execute("openssl", args, data, main);
 }
 
-Bytes sign(const std::string& privatekeypath, const Bytes& data) {
+Bytes sign_impl(const std::string& privatekeypath, const Bytes& data) {
 
     Args args;
     args.push_back("dgst");
@@ -162,73 +162,11 @@ Bytes smime_sign(const std::string& privatekeypath, const std::string& certifica
     return execute("openssl", args, Bytes(), main);
 }
 
-void fill_string(char* dst, int value) {
-    char str[10];
-    memset(str, 0, sizeof(str));
-    strncpy(dst, str, sprintf(str, "%d", value));
-}
-
 // int main(int argc, char *argv[])
 // {
 //     return dgst_main(argc,argv);
 // } 
 
-#define HANDLE_ERRORS(expr) \
-    try {\
-        (expr);\
-        return 0;\
-    }\
-    catch(const std::exception& e) {\
-        strncpy(error, e.what(), bufsize);\
-        return -1;\
-    }\
-    catch (...) {\
-        strncpy(error, "Unknown error", bufsize);\
-        return -1;\
-    }    
-
-    
-    
-extern "C" {
-    
-    int dgst1(const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
-        HANDLE_ERRORS({
-            const std::string data(dataptr);
-            const Bytes res = digest(Bytes(data.begin(), data.end()));
-            int size = std::min(static_cast<int>(res.size()), bufsize); 
-            fill_string(rsize, size);            
-            memcpy(result, res.data(), size);
-        })
-    }
-
-    int sign1(const char* privatekeypath, const char* dataptr, char* result, char* rsize, char* error, int bufsize) {
-        HANDLE_ERRORS({
-            const std::string data(dataptr);
-            const Bytes res = sign(privatekeypath, Bytes(data.begin(), data.end()));
-            int size = std::min(static_cast<int>(res.size()), bufsize); 
-            fill_string(rsize, size);            
-            memcpy(result, res.data(), size);
-        })
-    }
-    
-    int verify_file1(const char* signaturepath, const char* filename, char* result, char* rsize, char* error, int bufsize) {
-        HANDLE_ERRORS({
-            smime_verify(signaturepath, filename);
-        })
-    }
-
-    int sign_file1(const char* privatekeypath, const char* certificatefile, const char* filename, char* result, char* rsize, char* error, int bufsize) {
-        HANDLE_ERRORS({
-            const Bytes res = smime_sign(privatekeypath, certificatefile, filename);
-            int size = std::min(static_cast<int>(res.size()), bufsize); 
-            fill_string(rsize, size);
-            memcpy(result, res.data(), size);
-        })
-    }
-
-}
-
-// Include the Ruby headers and goodies
 #include "ruby.h"
 
 #define HANDLE_EXCEPTIONS(expr) \
@@ -253,19 +191,43 @@ extern "C" {
         })
     }
     
-    int sign(VALUE self, VALUE rkey, VALUE rdata) {
+    VALUE sign(VALUE self, VALUE rkey, VALUE rdata) {
         HANDLE_EXCEPTIONS({
+            const std::string privatekeypath(RSTRING_PTR(rkey), RSTRING_END(rkey));          
             const Bytes data(RSTRING_PTR(rdata), RSTRING_END(rdata));
-            const std::string privatekeypath(RSTRING_PTR(rkey), RSTRING_END(rkey));
-            const Bytes res = sign(privatekeypath, data);
+            std::cerr << "sign key: " << privatekeypath << " sign data:" << &data[0] << std::endl;
+            const Bytes res = sign_impl(privatekeypath, data);
             return rb_str_new2(res.data());
         })
     }    
+    
+    VALUE verify_file(VALUE self, VALUE rsign, VALUE rpath) {
+        HANDLE_EXCEPTIONS({
+            const std::string signaturepath(RSTRING_PTR(rsign), RSTRING_END(rsign));
+            const std::string filename(RSTRING_PTR(rpath), RSTRING_END(rpath));
+            std::cerr << "verify signature: " << signaturepath << " filename:" << filename << std::endl;
+            smime_verify(signaturepath, filename);
+        })
+    }
+
+    VALUE sign_file(VALUE self, VALUE rkey, VALUE rcert, VALUE rpath) {
+        HANDLE_EXCEPTIONS({
+            const std::string privatekeypath(RSTRING_PTR(rkey), RSTRING_END(rkey));
+            const std::string certificatefile(RSTRING_PTR(rcert), RSTRING_END(rcert));
+            const std::string filename(RSTRING_PTR(rpath), RSTRING_END(rpath));
+            std::cerr << "sign file  key: " << privatekeypath << " cert:" << certificatefile << " file: " << filename << std::endl;
+            const Bytes res = smime_sign(privatekeypath, certificatefile, filename);
+            return rb_str_new2(res.data());
+        })
+    }
 
     // The initialization method for this module
     void Init_sslext() {
         static VALUE sslExt = rb_define_module("SslExt");
         rb_define_method(sslExt, "dgst", (VALUE(*)(...))dgst, 1);
+        rb_define_method(sslExt, "sign", (VALUE(*)(...))sign, 2);
+        rb_define_method(sslExt, "verify_file", (VALUE(*)(...))verify_file, 2);
+        rb_define_method(sslExt, "sign_file", (VALUE(*)(...))sign_file, 3);
     }
 
 

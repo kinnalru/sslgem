@@ -42,7 +42,7 @@ begin
         puts "\n  >> Generate sign with invalid key..."
         sign = ssl.sign("/not/existent/key", "11111111")
         raise "it must be impossible to generate digest"
-    rescue SslGem::Error => e
+    rescue => e
         puts "  >> Result OK"
     end
     
@@ -60,7 +60,7 @@ begin
         puts "\n  >> Verify BAD signed file..."
         ssl.verify_file(__FILE__, __FILE__) 
         raise "it must be impossible to verify this file"
-    rescue SslGem::Error => e
+    rescue => e
         puts "  >> Result OK"
     end
     
