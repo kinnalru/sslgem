@@ -6,8 +6,8 @@
 
 my $openssl;
 
-my $dir;
-my $prefix;
+my $dir = "/home/jerry2/devel/sslgem/build/image/ssl";
+my $prefix = "/home/jerry2/devel/sslgem/build/image";
 
 if(defined $ENV{OPENSSL}) {
 	$openssl = $ENV{OPENSSL};
