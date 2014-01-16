@@ -66,7 +66,7 @@ begin
 
     begin
         puts "\n  >> Verify BAD signature file..."
-    	File.write "/tmp/temp.test", "hello world"
+        File.write "/tmp/temp.test", "hello world"
         ssl.verify_file("/tmp/temp.sig", "/tmp/temp.test") 
         raise "it must be impossible to verify this file"
     rescue SslGem::Error => e
