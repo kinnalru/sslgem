@@ -1,5 +1,5 @@
-require 'fiddle'
 require 'base64'
+require 'open3'
 
 class SslGem
     
@@ -14,65 +14,37 @@ class SslGem
         end
     end
     
-    def initialize
-        @libssl = Fiddle.dlopen(IMAGEPATH+ "/lib/" + 'librubyssl.so')
-        
-        attach_function(:dgst,
-            [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
-            Fiddle::TYPE_INT
-        ) do |data|
-          Base64.encode64(data)
-        end
-        
-        attach_function(:verify_file,
-            [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
-            Fiddle::TYPE_INT
-        )
-        
-        attach_function(:sign_file,
-            [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT],
-            Fiddle::TYPE_INT
-        )
-        
-    end
-    
-    
-private
+	def dgst key, data
+        stdout, stderr, status = Open3.capture3("openssl dgst -engine gost -sign #{key}", stdin_data: data, binmode: true)
 
-    def attach_function name, signature, result
-        #defining variable to wrap c-function
-        instance_eval("
-            @#{name} = Fiddle::Function.new( 
-                @libssl['#{name}'],
-                #{signature},
-                #{result}
-            )
-        ")
-        
-        #declaring function to handle c-function call
-        @@tmpname = name
-        class << self
-            define_method(@@tmpname) do |*args|
-                result_ptr = Fiddle::Pointer::malloc(BUFSIZE)
-                error_ptr = Fiddle::Pointer::malloc(BUFSIZE)
-                size_ptr = Fiddle::Pointer::malloc(BUFSIZE)
-                
-                result_size = size_ptr.to_s.to_i
-                status = instance_eval("@#{__method__}").call(*args, result_ptr, size_ptr, error_ptr, BUFSIZE)
-                result_size = size_ptr.to_s.to_i
-                if (status == 0)
-                  if block_given?
-                    return yield result_ptr.to_s(result_size)
-                  else
-                    return result_ptr.to_s(result_size)
-                  end
-                else
-                    raise SslGem::Error.new(error_ptr.to_s)
-                end
-            end
-        end
-    end
-    
+		if status.success?
+            return (Base64.encode64 stdout).strip
+		else
+			raise Error.new("dgst failed: #{stderr}")
+		end
+	end
+
+
+	def verify_file signature, file
+        stdout, stderr, status = Open3.capture3("openssl smime -verify -engine gost -noverify -inform DER -in #{signature} -content #{file}", binmode: true)
+
+		if status.success?
+            return /successful/ =~ stdout
+		else
+			raise Error.new("verify_file failed: #{stderr}")
+		end
+	end
+
+	def sign_file key, cert, file
+        stdout, stderr, status = Open3.capture3("openssl smime -sign -engine gost -gost89  -inkey #{key} -signer #{cert} -in #{file} -outform DER -binary", binmode: true)
+
+		if status.success?
+	        return stdout.strip
+		else
+			raise Error.new("sign_file failed: #{stderr}")
+		end
+	end
+
     
 end
 

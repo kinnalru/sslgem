@@ -1,4 +1,4 @@
-
+#!/usr/bin/env ruby
 require 'base64'
 
 $stderr.sync = true
