@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+require 'rubygems'
 require 'base64'
 require 'pp'
 
@@ -9,7 +10,7 @@ puts "=============================="
 puts "|       testing sslgem       |"
 puts "=============================="
 
-$:.unshift File.join(File.dirname(__FILE__))
+#$:.unshift File.join(File.dirname(__FILE__))
 
 puts ">> Loading gem..."
 require 'sslgem'
