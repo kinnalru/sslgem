@@ -18,6 +18,9 @@ puts "\n>> Creating ssl instance..."
 ssl = SslGem.new
 puts ">> Creating ssl instance... OK"
 
+
+puts ssl.info
+
 puts ">> Begin test"
 begin
     

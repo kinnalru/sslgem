@@ -3,8 +3,7 @@ require 'open3'
 
 class SslGem
 
-  BUFSIZE=4096
-  IMAGEPATH = File.dirname(__FILE__) + "/image/"
+  IMAGEPATH = File.dirname(__FILE__) + "/../ext/ssl/image/"
   ENV['PATH']="#{IMAGEPATH}/bin:#{ENV['PATH']}"
 
   TESTKEY = File.dirname(__FILE__) + "/keys/seckey.pem"
@@ -14,6 +13,14 @@ class SslGem
     def initialize(message)
       super(message)
     end
+  end
+
+  def info
+	  return "SslGem info:\n
+      using openssl: #{`which openssl`}\n
+      version: #{`openssl version -a`}
+      engines: #{`openssl engine -t`}
+	  "
   end
 
   def dgst data

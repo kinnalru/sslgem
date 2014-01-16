@@ -1,7 +1,7 @@
 
 
 all:
-	mkdir -p build && cd build && cmake -DDESTDIR="`pwd`/../${DESTDIR}" .. && make ext
+	mkdir -p build && cd build && cmake -DDESTDIR="`pwd`/../${DESTDIR}" .. && make ssl
 
 install:
 
