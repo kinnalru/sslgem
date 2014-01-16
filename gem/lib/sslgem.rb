@@ -16,14 +16,24 @@ class SslGem
             super(message)
         end
     end
-    
-	def dgst key, data
-        stdout, stderr, status = Open3.capture3("openssl dgst -engine gost -sign #{key}", stdin_data: data, binmode: true)
+
+	def dgst data
+        stdout, stderr, status = Open3.capture3('openssl dgst -engine gost -md_gost94 -binary', stdin_data: data, binmode: true)
 
 		if status.success?
             return (Base64.encode64 stdout).strip
 		else
 			raise Error.new("dgst failed: #{stderr}")
+		end
+	end
+    
+	def sign key, data
+        stdout, stderr, status = Open3.capture3("openssl dgst -engine gost -sign #{key}", stdin_data: data, binmode: true)
+
+		if status.success?
+            return (Base64.encode64 stdout).strip
+		else
+			raise Error.new("sign failed: #{stderr}")
 		end
 	end
 
