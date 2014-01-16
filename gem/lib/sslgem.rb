@@ -1,26 +1,34 @@
 require 'base64'
 require 'open3'
+require 'nokogiri'
+require 'fiddle'
 
 class SslGem
 
   IMAGEPATH = File.dirname(__FILE__) + "/../ext/ssl/image/"
   ENV['PATH']="#{IMAGEPATH}/bin:#{ENV['PATH']}"
+  SSLLIB = Fiddle::Handle.new(IMAGEPATH + "/lib/libopenssl.so", Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
 
-  TESTKEY = File.dirname(__FILE__) + "/keys/seckey.pem"
-  TESTCERT = File.dirname(__FILE__) + "/keys/cert.pem"
+  TESTKEY = File.dirname(__FILE__) + "/test/seckey.pem"
+  TESTCERT = File.dirname(__FILE__) + "/test/cert.pem"
+  TESTRESPONSE = File.dirname(__FILE__) + "/test/response"
 
   class Error < RuntimeError
     def initialize(message)
       super(message)
     end
   end
+  
+  def initialize
+    require 'openssl'
+  end
 
   def info
-	  return "SslGem info:\n
+    return "SslGem info:\n
       using openssl: #{`which openssl`}\n
       version: #{`openssl version -a`}
       engines: #{`openssl engine -t`}
-	  "
+    "
   end
 
   def dgst data
@@ -61,6 +69,17 @@ class SslGem
       return stdout.strip
     else
       raise Error.new("sign_file failed: #{stderr}")
+    end
+  end
+  
+  def extract_certs rawxml
+    xml = Nokogiri.XML(rawxml)
+    xml.remove_namespaces!
+    certs = []
+    certs += xml.search('X509Certificate')
+    certs +=  xml.search('BinarySecurityToken')
+    return certs.map do |cert|
+      OpenSSL::X509::Certificate.new "-----BEGIN CERTIFICATE-----#{cert.text}-----END CERTIFICATE-----"
     end
   end
 
