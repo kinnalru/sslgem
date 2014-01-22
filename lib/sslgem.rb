@@ -80,8 +80,18 @@ class SslGem
     certs += xml.search('X509Certificate')
     certs +=  xml.search('BinarySecurityToken')
     return certs.map do |cert|
-      OpenSSL::X509::Certificate.new "-----BEGIN CERTIFICATE-----#{cert.text}-----END CERTIFICATE-----"
+      c = OpenSSL::X509::Certificate.new(Base64.decode64(cert.text))
+      stdout, stderr, status = Open3.capture3("openssl x509 -noout -text -certopt no_pubkey -certopt no_sigdump -nameopt oneline,-esc_msb", stdin_data: c.to_s, binmode: true)
+      
+      c.issuer = OpenSSL::X509::Name.parse repack_name(stdout.split("\n").grep(/Issuer/).first, "Issuer")
+      c.subject = OpenSSL::X509::Name.parse repack_name(stdout.split("\n").grep(/Subject/).first, "Subject")
+
+      c
     end
+  end
+  
+  def repack_name name, type
+    return name.sub("#{type}:", "").strip.gsub(" = ", "=").gsub(", ", "/")
   end
 
 end
