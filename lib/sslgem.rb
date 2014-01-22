@@ -87,7 +87,7 @@ class SslGem
       c.subject = OpenSSL::X509::Name.parse repack_name(stdout.split("\n").grep(/Subject/).first, "Subject")
 
       c
-    end
+    end.uniq{|c| c.serial.to_i}
   end
   
   def repack_name name, type
