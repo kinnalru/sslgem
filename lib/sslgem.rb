@@ -80,76 +80,106 @@ module Ssl
       certs += xml.search('X509Certificate')
       certs +=  xml.search('BinarySecurityToken')
       return certs.map() do |cert|
-        Ssl::Certificate.new(Base64.decode64(cert.text))
-      end.uniq{|c| c.serial.to_i}
+        begin
+          Ssl::Certificate.new(Base64.decode64(cert.text))
+        rescue
+          nil
+        end
+      end.uniq{|c| c.serial.to_i}.select{|c| c}
     end
     
   end
 
   class Certificate < OpenSSL::X509::Certificate
+    def initialize args = nil
+      
+      if args.nil?
+        return
+      else
+        super(args)
+      end
+      
+      begin
+        stdout, stderr, status = Open3.capture3('openssl x509 -noout -text -certopt no_pubkey -certopt no_sigdump -nameopt oneline,-esc_msb', stdin_data: self.to_s, binmode: true)
+        stdout = stdout.split("\n")
+      rescue => e
+        puts "Exception1: #{e}"
+        return
+      end
+      
+      begin
+        self.issuer = OpenSSL::X509::Name.parse repack_name(stdout.grep(/Issuer/).first, 'Issuer')
+      rescue => e
+        puts "Exception2: #{e}"
+      end
+      
+      begin
+        self.subject = OpenSSL::X509::Name.parse repack_name(stdout.grep(/Subject/).first, 'Subject')
+      rescue => e
+        puts "Exception3: #{e}"
+      end
+      
+      begin
+        not_after = Time.parse(self.not_after.to_s).utc
+        not_before = Time.parse(self.not_before.to_s).utc
+      rescue => e
+        puts "Exception4: #{e}"
+      end
+      
+    rescue => e
+      puts "Exception5: #{e}"
+      raise e
+    end
     
-      def initialize args = nil
-          super(args)
-          
-          begin
-              stdout, stderr, status = Open3.capture3('openssl x509 -noout -text -certopt no_pubkey -certopt no_sigdump -nameopt oneline,-esc_msb', stdin_data: self.to_s, binmode: true)
-              stdout = stdout.split("\n")
-          rescue => e
-              puts "Exception: #{e}"
-              return
-          end
-          
-          begin
-              self.issuer = OpenSSL::X509::Name.parse repack_name(stdout.grep(/Issuer/).first, 'Issuer')
-          rescue => e
-              puts "Exception: #{e}"
-          end
-          
-          begin
-              self.subject = OpenSSL::X509::Name.parse repack_name(stdout.grep(/Subject/).first, 'Subject')
-          rescue => e
-              puts "Exception: #{e}"
-          end
-          
-          begin
-            not_after = Time.parse(not_after).utc
-            not_before = Time.parse(not_before).utc
-          rescue
-          end
-      end
-      
-      def subjectx
-          self.subject.to_a.inject({}) do |ret, v| ret[v[0]] = v[1].force_encoding('utf-8'); ret; end 
-      end
-      
-      def issuerx
-          self.issuer.to_a.inject({}) do |ret, v| ret[v[0]] = v[1].force_encoding('utf-8'); ret; end
-      end
+    def subjectx
+        self.subject.to_a.inject({}) do |ret, v| ret[v[0]] = v[1].force_encoding('utf-8'); ret; end 
+  end
+    
+    def issuerx
+      self.issuer.to_a.inject({}) do |ret, v| ret[v[0]] = v[1].force_encoding('utf-8'); ret; end
+    end
 
-      def extensionsx
-          return self.extensions.inject({}) do |ret, ext|
-            ret[ext.oid] = ext.to_h
-            
-            priv = ret['privateKeyUsagePeriod']
-            if priv
-                not_before, not_after = priv['value'].split(',')
-                
-                not_before = not_before.sub('Not Before:', '').strip
-                not_after = not_after.sub('Not After:', '').strip
-                
-                priv['Not Before'] = Time.parse(not_before).utc
-                priv['Not After'] = Time.parse(not_after).utc
-                ret['privateKeyUsagePeriod'] = priv
-            end
-            
-            ret
-          end
+    def extensionsx
+      return self.extensions.inject({}) do |ret, ext|
+        ret[ext.oid] = ext.to_h
+        
+        priv = ret['privateKeyUsagePeriod']
+        if priv
+          not_before, not_after = priv['value'].split(',')
+          
+          not_before = not_before.sub('Not Before:', '').strip
+          not_after = not_after.sub('Not After:', '').strip
+          
+          priv['Not Before'] = Time.parse(not_before).utc
+          priv['Not After'] = Time.parse(not_after).utc
+          ret['privateKeyUsagePeriod'] = priv
+        end
+        
+        ret
       end
+    end
+    
+    def expired?
+      now = Time.new
+      return ((now < not_before) || (not_after < now)) || private_expired?
+    end
       
-      def repack_name name, type
-          return name.sub("#{type}:", '').strip.gsub(" = ", "=").gsub(", ", "/")
+    def private_expired?
+      if (key = extensionsx['privateKeyUsagePeriod'])
+        now = Time.new
+        return (now < key['Not Before']) || (key['Not After'] < now)
       end
-      
+      return false
+    end
+    
+    def to_expired
+      return not_after - Time.now
+    end
+    
+    def repack_name name, type
+      return name.sub("#{type}:", '').strip.gsub(" = ", "=").gsub(", ", "/")
+    end
+    
   end
 
 end
