@@ -15,7 +15,7 @@ else()
 	message("DESTDIR=[${DESTDIR}]")
 endif()
 
-set(IMAGE_DIR ${DESTDIR}/image) 
+set(IMAGE_DIR ${DESTDIR}/image/) 
 
 add_subdirectory(openssl_src EXCLUDE_FROM_ALL)
 

@@ -6,8 +6,8 @@
 
 my $openssl;
 
-my $dir = "/home/jerry/devel/sslgem_new/gem/ext/ssl/build/..//image/ssl";
-my $prefix = "/home/jerry/devel/sslgem_new/gem/ext/ssl/build/..//image";
+my $dir = "/usr/local/ssl";
+my $prefix = "/usr/local/ssl";
 
 if(defined $ENV{OPENSSL}) {
 	$openssl = $ENV{OPENSSL};
