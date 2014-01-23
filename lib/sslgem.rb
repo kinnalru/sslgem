@@ -12,7 +12,7 @@ module Ssl
 
     IMAGEPATH = File.dirname(__FILE__) + "/../ext/ssl/image/"
     ENV['PATH']="#{IMAGEPATH}/bin:#{ENV['PATH']}"
-    SSLLIB = Fiddle::Handle.new(IMAGEPATH + "/lib/libopenssl.so", Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
+    #SSLLIB = Fiddle::Handle.new(IMAGEPATH + "/lib/libopenssl.so", Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
 
     TESTKEY = File.dirname(__FILE__) + "/test/seckey.pem"
     TESTCERT = File.dirname(__FILE__) + "/test/cert.pem"

@@ -19,6 +19,7 @@ puts ">> Loading gem...    OK"
 puts "\n>> Creating ssl instance..."
 ssl = Ssl::SslGem.new
 puts ">> Creating ssl instance... OK"
+puts ">>PATH: #{ENV['PATH']}"
 
 
 puts ssl.info

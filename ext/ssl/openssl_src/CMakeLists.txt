@@ -19,6 +19,7 @@ ExternalProject_Add(
 
 
 add_custom_target(libopenssl DEPENDS libopenssl_build
-	COMMAND cp -rf ${CMAKE_CURRENT_SOURCE_DIR}/apps/libopenssl.so ${IMAGE_DIR}/lib
-	COMMAND cp -rf ${CMAKE_CURRENT_SOURCE_DIR}/apps/libopenssl.a ${IMAGE_DIR}/lib)
-
+	COMMAND ls
+)
+#	COMMAND cp -rf ${CMAKE_CURRENT_SOURCE_DIR}/apps/libopenssl.a ${IMAGE_DIR}/lib)
+#	COMMAND cp -rf ${CMAKE_CURRENT_SOURCE_DIR}/apps/libopenssl.so ${IMAGE_DIR}/lib

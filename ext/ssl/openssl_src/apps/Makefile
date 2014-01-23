@@ -29,8 +29,8 @@ DLIBCRYPTO=../libcrypto.a
 DLIBSSL=../libssl.a
 LIBCRYPTO=-L.. -lcrypto
 LIBSSL=-L.. -lssl
-LIBOPENSSL=libopenssl.so
-LIBOPENSSLa=libopenssl.a
+#LIBOPENSSL=libopenssl.so
+#LIBOPENSSLa=libopenssl.a
 
 PROGRAM= openssl
 
@@ -164,8 +164,6 @@ $(EXE): progs.h $(E_OBJ) $(PROGRAM).o $(DLIBCRYPTO) $(DLIBSSL)
 		APPNAME=$(EXE) OBJECTS="$(PROGRAM).o $(E_OBJ)" \
 		LIBDEPS="$(PEX_LIBS) $$LIBRARIES $(EX_LIBS)" \
 		link_app.$${shlib_target}
-	$(CC) -shared -o $(LIBOPENSSL) $(PROGRAM).o $(E_OBJ) ../ssl/d1_pkt.o ../crypto/o_dir.o ../crypto/x509/x509type.o ../crypto/evp/e_null.o ../crypto/comp/comp_lib.o $(DLIBCRYPTO) $(DLIBSSL) $(LIBKRB5) $(EX_LIBS) $(PEX_LIBS) -ldl
-	$(AR) $(LIBOPENSSLa) $(PROGRAM).o $(E_OBJ) ../ssl/d1_pkt.o ../crypto/o_dir.o ../crypto/x509/x509type.o ../crypto/evp/e_null.o ../crypto/comp/comp_lib.o $(DLIBCRYPTO) $(DLIBSSL)
 	@(cd ..; $(MAKE) rehash)
 
 progs.h: progs.pl
