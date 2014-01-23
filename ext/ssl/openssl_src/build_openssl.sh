@@ -3,4 +3,5 @@
 LOCAL_PREFIX=$1
 PREFIX=$LOCAL_PREFIX
 
-./config --prefix=${PREFIX} -fPIC
+export CFLAGS=-fPIC
+./config --prefix=${PREFIX} 
