@@ -3,4 +3,4 @@
 LOCAL_PREFIX=$1
 PREFIX=$LOCAL_PREFIX
 
-./config --prefix=${PREFIX} 
+./config --prefix=${PREFIX} -fPIC
