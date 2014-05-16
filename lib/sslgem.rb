@@ -89,48 +89,49 @@ module Ssl
       end.uniq{|c| c.serial.to_i}.select{|c| c}
     end
     
+    def sign_xml data, key
+      digest = self.digest(data.canonicalize_excl)  
+      
+    template = <<-TEMPLATE
+  <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+    <ds:SignedInfo>
+      <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />
+      <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
+      <ds:Reference URI="#dsfgfs">
+        <ds:Transforms>
+          <ds:Transform
+            Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+          <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />
+        </ds:Transforms>
+        <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <ds:DigestValue></ds:DigestValue>
+      </ds:Reference>
+    </ds:SignedInfo>
+    <ds:SignatureValue></ds:SignatureValue>
+    <ds:KeyInfo>
+      <ds:X509Data>
+        <ds:X509Certificate>
+        </ds:X509Certificate>
+      </ds:X509Data>
+    </ds:KeyInfo>
+  </ds:Signature>
+  TEMPLATE
+
+      signature_structure = Nokogiri::XML::Document.parse(template).children.first
+      signed_info_structure = signature_structure.search_child("SignedInfo", NAMESPACES['ds']).first
+
+      signed_info_structure.search_child("DigestValue", NAMESPACES['ds']).first.children = digest
+      sign_value =  self.sign(key, signed_info_structure.canonicalize_excl)
+      signature_structure.search_child("SignatureValue", NAMESPACES['ds']).first.children = sign_value
+
+      data << signature_structure
+
+      data
+    end
+
   end
-  
-  def sign_xml data, key
-    digest = self.digest(data.canonicalize_excl)  
+
     
-  template = <<-TEMPLATE
-<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
-  <ds:SignedInfo>
-    <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />
-    <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
-    <ds:Reference URI="#dsfgfs">
-      <ds:Transforms>
-        <ds:Transform
-          Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
-        <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />
-      </ds:Transforms>
-      <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-      <ds:DigestValue></ds:DigestValue>
-    </ds:Reference>
-  </ds:SignedInfo>
-  <ds:SignatureValue></ds:SignatureValue>
-  <ds:KeyInfo>
-    <ds:X509Data>
-      <ds:X509Certificate>
-      </ds:X509Certificate>
-    </ds:X509Data>
-  </ds:KeyInfo>
-</ds:Signature>
-TEMPLATE
-
-    signature_structure = Nokogiri::XML::Document.parse(template).children.first
-    signed_info_structure = signature_structure.search_child("SignedInfo", NAMESPACES['ds']).first
-
-    signed_info_structure.search_child("DigestValue", NAMESPACES['ds']).first.children = digest
-    sign_value =  self.sign(key, signed_info_structure.canonicalize_excl)
-    signature_structure.search_child("SignatureValue", NAMESPACES['ds']).first.children = sign_value
-
-    data << signature_structure
-
-    data
-  end
-
   class Certificate < OpenSSL::X509::Certificate
     def initialize args = nil
       
