@@ -26,7 +26,6 @@ puts ssl.info
 
 puts ">> Begin test"
 begin
-    
     puts "\n  >> Generate digest 1..."
     dgst = ssl.dgst("11111111") 
     puts "  >> Result OK #{dgst}"
@@ -92,8 +91,30 @@ begin
     
     puts "  >> Result OK"
     
+    xml = <<-XML
+<?xml version="1.0" encoding="UTF-8"?>
+<samlp:AuthnRequest
+  xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" 
+  AssertionConsumerServiceURL="https://esia.s.rndsoft.ru/SOAP/ACS" 
+  ForceAuthn="false" 
+  ID="dsfgfs" 
+  IsPassive="false" 
+  IssueInstant="2014-02-19T10:58:59.236Z" 
+  ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" 
+  Version="2.0">
+<samlp:Issuer xmlns:samlp="urn:oasis:names:tc:SAML:2.0:assertion">https://esia.s.rndsoft.ru/SOAP/ACS</samlp:Issuer>
+</samlp:AuthnRequest>
+XML
+
+    puts "\n  >> Signing XML..."
+    doc = Nokogiri::XML::Document.parse xml
+    data = doc.search_child("AuthnRequest", NAMESPACES['samlp']).first
+    result = ssl.sign_xml data, Ssl::SslGem::TESTKEY
+    puts result.canonicalize_excl
+    puts "  >> Result OK"
+
    
-    puts "\n>> Test COMPLETED"
+    puts "\n>> ALL Tests COMPLETED SUCCESFUL"
 
 rescue => e
     puts "\n>> Test FAILED by exception:"

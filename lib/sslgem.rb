@@ -2,6 +2,7 @@ require 'rubygems'
 require 'base64'
 require 'open3'
 require 'nokogiri'
+require 'smev'
 require 'fiddle'
 
 require 'openssl'
