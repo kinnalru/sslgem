@@ -90,7 +90,7 @@ module Ssl
     end
     
     def sign_xml data, key
-      digest = self.digest(data.canonicalize_excl)  
+      digest = self.dgst(data.canonicalize_excl)  
       
     template = <<-TEMPLATE
   <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
@@ -126,7 +126,7 @@ module Ssl
 
       data << signature_structure
 
-      data
+      data.canonicalize_excl
     end
 
   end
