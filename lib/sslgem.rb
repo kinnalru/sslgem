@@ -113,7 +113,8 @@ module Ssl
       <ds:X509Certificate></ds:X509Certificate>
     </ds:X509Data>
   </ds:KeyInfo>
-</ds:Signature>TEMPLATE
+</ds:Signature>
+TEMPLATE
 
       signature_structure = Nokogiri::XML::Document.parse(template).children.first
       signed_info_structure = signature_structure.search_child("SignedInfo", NAMESPACES['ds']).first
