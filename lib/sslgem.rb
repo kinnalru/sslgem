@@ -34,7 +34,9 @@ module Ssl
     end
 
     def dgst data
-      stdout, stderr, status = Open3.capture3('openssl dgst -engine gost -md_gost94 -binary', stdin_data: data, binmode: true)
+      #Не всегда engine gost подписывает файлы
+      #stdout, stderr, status = Open3.capture3('openssl dgst -engine gost -md_gost94 -binary', stdin_data: data, binmode: true)
+      stdout, stderr, status = Open3.capture3('openssl dgst -binary', stdin_data: data, binmode: true)
 
       if status.success?
         return (Base64.encode64 stdout).strip
@@ -44,10 +46,12 @@ module Ssl
     end
       
     def sign key, data
-      stdout, stderr, status = Open3.capture3("openssl dgst -engine gost -sign #{key}", stdin_data: data, binmode: true)
+      #Не всегда engine gost подписывает файлы
+      #stdout, stderr, status = Open3.capture3("openssl dgst -engine gost -sign #{key}", stdin_data: data, binmode: true)
+      stdout, stderr, status = Open3.capture3("openssl dgst -sign #{key}", stdin_data: data, binmode: true)
 
       if status.success?
-        return (Base64.encode64 stdout).strip
+        return (Base64.strict_encode64 stdout.strip).strip
       else
         raise Error.new("sign failed: #{stderr}")
       end
@@ -97,7 +101,7 @@ module Ssl
   <ds:SignedInfo>
     <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />
     <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
-    <ds:Reference URI="#{data['ID']}">
+    <ds:Reference URI="##{data['ID']}">
       <ds:Transforms>
         <ds:Transform
           Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />

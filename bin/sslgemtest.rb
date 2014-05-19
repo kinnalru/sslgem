@@ -110,7 +110,7 @@ XML
     doc = Nokogiri::XML::Document.parse xml
     data = doc.search_child("AuthnRequest", NAMESPACES['samlp']).first
     result = ssl.sign_xml data, Ssl::SslGem::TESTKEY
-    puts result.canonicalize_excl
+    puts result
     puts "  >> Result OK"
 
    
