@@ -110,8 +110,7 @@ module Ssl
     <ds:SignatureValue></ds:SignatureValue>
     <ds:KeyInfo>
       <ds:X509Data>
-        <ds:X509Certificate>
-        </ds:X509Certificate>
+        <ds:X509Certificate></ds:X509Certificate>
       </ds:X509Data>
     </ds:KeyInfo>
   </ds:Signature>
