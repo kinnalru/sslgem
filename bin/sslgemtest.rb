@@ -119,7 +119,7 @@ XML
     
     begin
       puts "\n  >> Verify XML Try 1..."
-      result = ssl.verify_xml result, {}
+      result = ssl.verify_xml result, {engine: ''}
       raise "it must be impossible to verify this xml"
     rescue Ssl::SslGem::Error => e
       puts "  >> Result OK"
