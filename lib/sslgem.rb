@@ -4,6 +4,7 @@ require 'open3'
 require 'nokogiri'
 require 'smev'
 require 'fiddle'
+require 'ostruct'
 
 require 'openssl'
 
@@ -33,8 +34,10 @@ module Ssl
       "
     end
 
-    def dgst data, engine = '-engine gost -md_gost94'
-      stdout, stderr, status = Open3.capture3("openssl dgst #{engine} -binary", stdin_data: data, binmode: true)
+    def dgst data, opts = {}
+      opts = OpenStruct.new({dgst: 'dgst', engine: '-engine gost', dgst_arg: '-md_gost94'}.merge(opts.to_h))
+      
+      stdout, stderr, status = Open3.capture3("openssl #{opts[:dgst]} #{opts[:engine]} #{opts[:dgst_arg]} -binary", stdin_data: data, binmode: true)
 
       if status.success?
         return (Base64.encode64 stdout).strip
@@ -43,10 +46,9 @@ module Ssl
       end
     end
       
-    def sign key, data, engine = '-engine gost'
-      #Не всегда engine gost подписывает файлы
-      stdout, stderr, status = Open3.capture3("openssl dgst #{engine} -sign #{key}", stdin_data: data, binmode: true)
-      #stdout, stderr, status = Open3.capture3("openssl dgst -sign #{key}", stdin_data: data, binmode: true)
+    def sign key, data, opts = {}
+      opts = OpenStruct.new({engine: '-engine gost'}.merge(opts.to_h))
+      stdout, stderr, status = Open3.capture3("openssl dgst #{opts[:engine]} -sign #{key}", stdin_data: data, binmode: true)
 
       if status.success?
         return (Base64.strict_encode64 stdout.strip).strip
@@ -55,8 +57,9 @@ module Ssl
       end
     end
 
-    def verify_file signature, file, engine = '-engine gost'
-      stdout, stderr, status = Open3.capture3("openssl smime -verify #{engine} -noverify -inform DER -in #{signature} -content #{file}", binmode: true)
+    def verify_file signature, file, opts = {}
+      opts = OpenStruct.new({engine: '-engine gost'}.merge(opts.to_h))
+      stdout, stderr, status = Open3.capture3("openssl smime -verify #{opts[:engine]} -noverify -inform DER -in #{signature} -content #{file}", binmode: true)
 
       if status.success?
         return /successful/ =~ stdout
@@ -65,8 +68,9 @@ module Ssl
       end
     end
 
-    def sign_file key, cert, file, engine = '-engine gost -gost89'
-      stdout, stderr, status = Open3.capture3("openssl smime -sign #{engine}  -inkey #{key} -signer #{cert} -in #{file} -outform DER -binary", binmode: true)
+    def sign_file key, cert, file, opts = {}
+      opts = OpenStruct.new({engine: '-engine gost', sign_arg: '-gost89'}.merge(opts.to_h))
+      stdout, stderr, status = Open3.capture3("openssl smime -sign #{opts[:engine]} #{opts[:sign_arg]}  -inkey #{key} -signer #{cert} -in #{file} -outform DER -binary", binmode: true)
 
       if status.success?
         return stdout.strip
@@ -90,8 +94,11 @@ module Ssl
       end.uniq{|c| c.serial.to_i}.select{|c| c}
     end
     
-    def sign_xml data, key, engine = '-engine gost'
-      digest = self.dgst(data.canonicalize_excl, engine)  
+    def sign_xml data, key, opts = {}
+      opts = OpenStruct.new({engine: '-engine gost'}.merge(opts.to_h))
+      puts "data to digest:#{data}"
+      digest = self.dgst(data.canonicalize_excl, opts)  
+      puts "DIGEST:#{digest}"
       
     template = <<-TEMPLATE
 <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
@@ -117,11 +124,12 @@ module Ssl
 </ds:Signature>
 TEMPLATE
 
-      signature_structure = Nokogiri::XML::Document.parse(template).children.first
+      signature_structure = Nokogiri::XML::Document.parse(Nokogiri::XML::Document.parse(template, nil, "UTF-8").canonicalize_excl, nil, "UTF-8").children.first
       signed_info_structure = signature_structure.search_child("SignedInfo", NAMESPACES['ds']).first
 
       signed_info_structure.search_child("DigestValue", NAMESPACES['ds']).first.children = digest
-      sign_value =  self.sign(key, signed_info_structure.canonicalize_excl, engine)
+      
+      sign_value =  self.sign(key, signed_info_structure.canonicalize_excl, opts)
       signature_structure.search_child("SignatureValue", NAMESPACES['ds']).first.children = sign_value
 
       data << signature_structure
@@ -129,44 +137,48 @@ TEMPLATE
     end
 
     
-    def verify_xml xml, engine = '-engine gost'
+    def verify_xml xml, opts = {}
+      opts = OpenStruct.new({engine: '-engine gost'}.merge(opts.to_h))
       doc = Nokogiri::XML::Document.parse xml
       doc.search_child("Signature", NAMESPACES['ds']).each do |security|
-        security.search_child("Reference", NAMESPACES['ds']).each { |ref| check_digest_impl doc, ref['URI'][1..-1], engine } 
-        verify_signature_impl security, engine
+        security.search_child("Reference", NAMESPACES['ds']).each { |ref| check_digest_impl doc, ref['URI'][1..-1], opts } 
+        verify_signature_impl security, opts
       end
       return true
     end
     
-    def check_digest_impl doc, ref, engine
+    def check_digest_impl doc, ref, opts = {}
+      opts = OpenStruct.new({engine: '-engine gost'}.merge(opts.to_h))
       data = doc.search("*[ID='#{ref}']").first
       if data
         tmpdata = Nokogiri::XML::Document.parse(data.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML)).root
         signature = tmpdata.search_child("Signature", NAMESPACES['ds']).first.remove
         olddgst = signature.search_child("DigestValue", NAMESPACES['ds']).first.children.to_s.strip
-        newdgst = self.dgst(tmpdata.canonicalize_excl, engine)
-        raise Error.new("Wrong digest value") if newdgst != olddgst
+        newdgst = self.dgst(tmpdata.canonicalize_excl, opts)
+        raise Error.new("Wrong digest value: #{newdgst}") if newdgst != olddgst
       else
         raise Error.new("Not found signed partial!")
       end
     end
     
-    def verify_signature_impl security, engine
+    def verify_signature_impl security, opts = {}
+      opts = OpenStruct.new({engine: '-engine gost'}.merge(opts.to_h))
       certificate = "-----BEGIN CERTIFICATE-----\n"
       certificate << Base64.encode64(Base64.decode64(security.search_child("X509Certificate", NAMESPACES['ds']).first.children.to_s.strip))
       certificate << "-----END CERTIFICATE-----"
 
-      stdout, stderr, status = Open3.capture3("openssl x509 #{engine} -pubkey -noout", stdin_data: certificate, binmode: true)
+      
+      stdout, stderr, status = Open3.capture3("openssl x509 #{opts[:engine]} -pubkey -noout", stdin_data: certificate, binmode: true)
       public_key_file = if status.success?
         SslGem::write_tmp stdout.strip
       else
         raise Error.new("pubkey extraction failed: #{stderr}")
       end
-
+      
       signature_file = SslGem::write_tmp Base64.decode64(security.search_child("SignatureValue", NAMESPACES['ds']).first.children.to_s.strip)
       sig_info = security.search_child("SignedInfo", NAMESPACES['ds']).first.canonicalize_excl
 
-      stdout, stderr, status = Open3.capture3("openssl dgst #{engine} -verify " + public_key_file.path + ' -signature ' + signature_file.path, stdin_data: sig_info, binmode: true)
+      stdout, stderr, status = Open3.capture3("openssl dgst #{opts[:engine]} -verify " + public_key_file.path + ' -signature ' + signature_file.path, stdin_data: sig_info, binmode: true)
       if status.success?
         raise Error.new("Wrong signature!") unless /OK/ =~ stdout.strip
       else
