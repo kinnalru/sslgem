@@ -110,9 +110,18 @@ XML
     doc = Nokogiri::XML::Document.parse xml
     data = doc.search_child("AuthnRequest", NAMESPACES['samlp']).first
     result = ssl.sign_xml data, Ssl::SslGem::TESTKEY
+    doc = Nokogiri::XML::Document.parse(result)
+    doc.search_child("X509Certificate", NAMESPACES['ds']).first << File.read(Ssl::SslGem::TESTCERT).gsub(/\-{2,}[^\-]+\-{2,}/,'').gsub(/\n\n+/, "\n").strip
+    result = doc.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML)
     puts result
     puts "  >> Result OK"
 
+    
+    puts "\n  >> Verify XML..."
+    doc = Nokogiri::XML::Document.parse result
+    result = ssl.verify_xml data
+    puts result
+    puts "  >> Result OK"
    
     puts "\n>> ALL Tests COMPLETED SUCCESFUL"
 

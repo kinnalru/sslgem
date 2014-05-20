@@ -57,7 +57,6 @@ module Ssl
       end
     end
 
-
     def verify_file signature, file
       stdout, stderr, status = Open3.capture3("openssl smime -verify -engine gost -noverify -inform DER -in #{signature} -content #{file}", binmode: true)
 
@@ -133,7 +132,60 @@ TEMPLATE
 
   end
 
+  
+  def verify_xml xml
+    doc = Nokogiri::XML::Document.parse xml
+    doc.search_child("Signature", NAMESPACES['ds']).each do |security|
+      security.search_child("Reference", NAMESPACES['ds']).each { |ref| check_digest_impl doc, ref['URI'][1..-1] } 
+      verify_signature_impl security
+    end
+    return true
+  end
+  
+  def check_digest_impl doc, ref
+    data = doc.search("*[ID='#{ref}']").first
+    if data
+      tmpdata = Nokogiri::XML::Document.parse(data.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML))
+      olddgst = tmpdata.search_child("Signature", NAMESPACES['ds']).first.remove.search_child("DigestValue", NAMESPACES['ds']).first.children.to_s.strip
+      newdgst = self.dgst(tmpdata.canonicalize_excl)
+      raise Error.new("Wrong digest value") if newdgst != olddgst
+    else
+      raise Error.new("Not found signed partial!")
+    end
+  end
+  
+  def verify_signature_impl security
+    certificate = "-----BEGIN CERTIFICATE-----\n"
+    certificate << Base64.encode64(Base64.decode64(security.search_child("X509Certificate", NAMESPACES['ds']).first.children.to_s.strip))
+    certificate << "-----END CERTIFICATE-----"
+
+    stdout, stderr, status = Open3.capture3("openssl x509 -pubkey -noout", stdin_data: certificate, binmode: true)
+    if status.success?
+      public_key_file = SslGem::write_tmp stdout.strip
+    else
+      raise Error.new("pubkey extraction failed: #{stderr}")
+    end
     
+    signature_file = SslGem::write_tmp Base64.decode64(security.search_child("SignatureValue", NAMESPACES['ds']).first.children.to_s.strip)
+
+    stdout, stderr, status = Open3.capture3('openssl dgst -verify ' + public_key_file.path + ' -signature ' + signature_file.path, stdin_data: sig_info, binmode: true)
+    if status.success?
+      raise SignatureError.new("Wrong signature!") unless /OK/ =~ stdout
+    else
+      raise Error.new("pubkey extraction failed: #{stderr}")
+    end
+  ensure
+    public_key_file.unlink
+    signature_file.unlink   
+  end
+  
+  def self.write_tmp input, name = 'sign'
+    tmp_file = Tempfile.new name
+    tmp_file.binmode.write input
+    tmp_file.close
+    tmp_file
+  end
+  
   class Certificate < OpenSSL::X509::Certificate
     def initialize args = nil
       
