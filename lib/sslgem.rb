@@ -90,8 +90,8 @@ module Ssl
       end.uniq{|c| c.serial.to_i}.select{|c| c}
     end
     
-    def sign_xml data, key
-      digest = self.dgst(data.canonicalize_excl)  
+    def sign_xml data, key, engine = '-engine gost'
+      digest = self.dgst(data.canonicalize_excl, engine)  
       
     template = <<-TEMPLATE
 <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
@@ -121,7 +121,7 @@ TEMPLATE
       signed_info_structure = signature_structure.search_child("SignedInfo", NAMESPACES['ds']).first
 
       signed_info_structure.search_child("DigestValue", NAMESPACES['ds']).first.children = digest
-      sign_value =  self.sign(key, signed_info_structure.canonicalize_excl)
+      sign_value =  self.sign(key, signed_info_structure.canonicalize_excl, engine)
       signature_structure.search_child("SignatureValue", NAMESPACES['ds']).first.children = sign_value
 
       data << signature_structure
@@ -141,9 +141,10 @@ TEMPLATE
     def check_digest_impl doc, ref, engine
       data = doc.search("*[ID='#{ref}']").first
       if data
-        tmpdata = Nokogiri::XML::Document.parse(data.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML))
-        olddgst = tmpdata.search_child("Signature", NAMESPACES['ds']).first.remove.search_child("DigestValue", NAMESPACES['ds']).first.children.to_s.strip
-        newdgst = self.dgst(tmpdata.canonicalize_excl)
+        tmpdata = Nokogiri::XML::Document.parse(data.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML)).root
+        signature = tmpdata.search_child("Signature", NAMESPACES['ds']).first.remove
+        olddgst = signature.search_child("DigestValue", NAMESPACES['ds']).first.children.to_s.strip
+        newdgst = self.dgst(tmpdata.canonicalize_excl, engine)
         raise Error.new("Wrong digest value") if newdgst != olddgst
       else
         raise Error.new("Not found signed partial!")
@@ -156,23 +157,24 @@ TEMPLATE
       certificate << "-----END CERTIFICATE-----"
 
       stdout, stderr, status = Open3.capture3("openssl x509 #{engine} -pubkey -noout", stdin_data: certificate, binmode: true)
-      if status.success?
-        public_key_file = SslGem::write_tmp stdout.strip
+      public_key_file = if status.success?
+        SslGem::write_tmp stdout.strip
       else
         raise Error.new("pubkey extraction failed: #{stderr}")
       end
-      
-      signature_file = SslGem::write_tmp Base64.decode64(security.search_child("SignatureValue", NAMESPACES['ds']).first.children.to_s.strip)
 
-      stdout, stderr, status = Open3.capture3("openssl dgst -verify #{engine} " + public_key_file.path + ' -signature ' + signature_file.path, stdin_data: sig_info, binmode: true)
+      signature_file = SslGem::write_tmp Base64.decode64(security.search_child("SignatureValue", NAMESPACES['ds']).first.children.to_s.strip)
+      sig_info = security.search_child("SignedInfo", NAMESPACES['ds']).first.canonicalize_excl
+
+      stdout, stderr, status = Open3.capture3("openssl dgst #{engine} -verify " + public_key_file.path + ' -signature ' + signature_file.path, stdin_data: sig_info, binmode: true)
       if status.success?
-        raise SignatureError.new("Wrong signature!") unless /OK/ =~ stdout.strip
+        raise Error.new("Wrong signature!") unless /OK/ =~ stdout.strip
       else
         raise Error.new("pubkey extraction failed: #{stderr}")
       end
     ensure
-      public_key_file.unlink
-      signature_file.unlink   
+      public_key_file.unlink if public_key_file
+      signature_file.unlink  if signature_file
     end
     
     def self.write_tmp input, name = 'sign'

@@ -109,7 +109,7 @@ XML
     puts "\n  >> Signing XML..."
     doc = Nokogiri::XML::Document.parse xml
     data = doc.search_child("AuthnRequest", NAMESPACES['samlp']).first
-    result = ssl.sign_xml data, Ssl::SslGem::TESTKEY
+    result = ssl.sign_xml data, Ssl::SslGem::TESTKEY, '-engine gost'
     doc = Nokogiri::XML::Document.parse(result)
     doc.search_child("X509Certificate", NAMESPACES['ds']).first << File.read(Ssl::SslGem::TESTCERT).gsub(/\-{2,}[^\-]+\-{2,}/,'').gsub(/\n\n+/, "\n").strip
     result = doc.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML)
@@ -117,10 +117,16 @@ XML
     puts "  >> Result OK"
 
     
-    puts "\n  >> Verify XML..."
-    doc = Nokogiri::XML::Document.parse result
-    result = ssl.verify_xml data
-    puts result
+    begin
+      puts "\n  >> Verify XML Try 1..."
+      result = ssl.verify_xml result, ''
+      raise "it must be impossible to verify this xml"
+    rescue Ssl::SslGem::Error => e
+      puts "  >> Result OK"
+    end
+    
+    puts "\n  >> Verify XML Try 2..."
+    result = ssl.verify_xml result, '-engine gost'
     puts "  >> Result OK"
    
     puts "\n>> ALL Tests COMPLETED SUCCESFUL"
