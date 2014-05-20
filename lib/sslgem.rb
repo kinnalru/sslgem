@@ -128,8 +128,7 @@ TEMPLATE
       signature_structure.search_child("SignatureValue", NAMESPACES['ds']).first.children = sign_value
 
       data << signature_structure
-
-      data.canonicalize_excl
+      data.to_xml(:save_with => Nokogiri::XML::Node::SaveOptions::AS_XML)
     end
 
   end
