@@ -10,10 +10,10 @@ class Helper
 end
 
 Gem::Specification.new do |s|
-    s.required_ruby_version = '~> 2.0'
+    #s.required_ruby_version = '~> 2.0'
     s.name        = 'sslgem'
-    s.version     = '0.0.1'
-    s.date        = '2014-01-21'
+    s.version     = '0.0.2'
+    s.date        = '2014-02-21'
     s.summary     = "Simple and specific OpenSSL wrapper"
     s.description = "Simple and specific OpenSSL wrapper"
     s.authors     = "Samoilenko Yuri"
