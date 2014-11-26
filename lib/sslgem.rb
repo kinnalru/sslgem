@@ -51,7 +51,7 @@ module Ssl
       stdout, stderr, status = Open3.capture3("openssl dgst #{opts[:engine]} -sign #{key}", stdin_data: data, binmode: true)
 
       if status.success?
-        return (Base64.strict_encode64 stdout.strip).strip
+        return (Base64.strict_encode64 stdout).strip
       else
         raise Error.new("sign failed: #{stderr}")
       end
@@ -73,6 +73,7 @@ module Ssl
       stdout, stderr, status = Open3.capture3("openssl smime -sign #{opts[:engine]} #{opts[:sign_arg]}  -inkey #{key} -signer #{cert} -in #{file} -outform DER -binary", binmode: true)
 
       if status.success?
+        # FIXME may be not need strip. Not need if stdout is binary flow
         return stdout.strip
       else
         raise Error.new("sign_file failed: #{stderr}")
